@@ -1,0 +1,57 @@
+#!/bin/sh
+# Autor: Nilton OS -- www.linuxpro.com.br
+#
+#
+### BEGIN INIT INFO
+# Provides:          uwsgi
+# Required-Start:    $syslog $remote_fs
+# Should-Start:      $time ypbind smtp
+# Required-Stop:     $syslog $remote_fs
+# Should-Stop:       ypbind smtp
+# Default-Start:     3 5
+# Default-Stop:      0 1 2 6
+### END INIT INFO
+ 
+# Source function library.
+. /etc/rc.d/init.d/functions
+ 
+# Check for missing binaries (stale symlinks should not happen)
+UWSGI_BIN=`which uwsgi`
+test -x $UWSGI_BIN || { echo "$UWSGI_BIN not installed"; 
+        if [ "$1" = "stop" ]; then exit 0;
+        else exit 5; fi; }
+ 
+UWSGI_EMPEROR_MODE=true
+UWSGI_VASSALS="/etc/uwsgi/apps-awailable/"
+UWSGI_OPTIONS="--enable-threads --logto /var/log/uwsgi/uwsgi.log"
+lockfile=/var/lock/subsys/uwsgi
+ 
+UWSGI_OPTIONS="$UWSGI_OPTIONS --autoload"
+ 
+if [ "$UWSGI_EMPEROR_MODE" = "true" ] ; then
+    UWSGI_OPTIONS="$UWSGI_OPTIONS --emperor $UWSGI_VASSALS"
+fi
+ 
+case "$1" in
+    start)
+        echo -n "Starting uWSGI "
+        daemon $UWSGI_BIN $UWSGI_OPTIONS &
+        ;;
+    stop)
+        echo -n "Shutting down uWSGI "
+        killproc $UWSGI_BIN
+        ;;
+    restart)
+        $0 stop
+        $0 start
+        ;;
+    status)
+        echo -n "Checking for service uWSGI "
+        status $UWSGI_BIN
+        ;;
+    *)
+        echo "Usage: $0 {start|stop|status|restart}"
+        exit 1
+        ;;
+esac
+exit 0 
